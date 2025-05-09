@@ -3,12 +3,26 @@ import { mainProxy } from './main_proxy.js';
 
 export class AgentProcess {
     start(profile, load_memory=false, init_message=null, count_id=0, task_path=null, task_id=null) {
-        this.profile = profile;
+        // Validate profile parameter
+        let profilePath;
+        
+        if (typeof profile === 'string') {
+            profilePath = profile;
+        } else if (profile && typeof profile === 'object' && profile.profileContent) {
+            // This is a temporary compatibility measure
+            // In the future, BotFactory should be updated to pass profilePath directly
+            console.warn('Deprecated: Passing profile as object. Update caller to pass profile path string.');
+            profilePath = profile.profileContent;
+        } else {
+            throw new TypeError('Profile must be a string filepath or an object with profileContent property');
+        }
+        
+        this.profile = profilePath;
         this.count_id = count_id;
         this.running = true;
 
         let args = ['src/process/init_agent.js', this.name];
-        args.push('-p', profile);
+        args.push('-p', profilePath);
         args.push('-c', count_id);
         if (load_memory)
             args.push('-l', load_memory);
@@ -38,11 +52,11 @@ export class AgentProcess {
             if (code !== 0 && signal !== 'SIGINT') {
                 // agent must run for at least 10 seconds before restarting
                 if (Date.now() - last_restart < 10000) {
-                    console.error(`Agent process ${profile} exited too quickly and will not be restarted.`);
+                    console.error(`Agent process ${profilePath} exited too quickly and will not be restarted.`);
                     return;
                 }
                 console.log('Restarting agent...');
-                this.start(profile, true, 'Agent process restarted.', count_id, task_path, task_id);
+                this.start(profilePath, true, 'Agent process restarted.', count_id, task_path, task_id);
                 last_restart = Date.now();
             }
         });

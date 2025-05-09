@@ -13,7 +13,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 const args = process.argv.slice(2);
 if (args.length < 1) {
-    console.log('Usage: node init_agent.js <agent_name> [profile] [load_memory] [init_message]');
+    console.log('Usage: node init_agent.js <agent_name> -p <profilePath> [other options]');
     process.exit(1);
 }
 
@@ -21,7 +21,7 @@ const argv = yargs(args)
     .option('profile', {
         alias: 'p',
         type: 'string',
-        description: 'profile filepath to use for agent'
+        description: 'profile filepath to use for agent (must be a valid file path)'
     })
     .option('load_memory', {
         alias: 'l',
@@ -53,6 +53,13 @@ const argv = yargs(args)
 // Wrap agent start in async IIFE with proper error handling
 (async () => {
     try {
+        // Validate profile is a string (file path)
+        if (typeof argv.profile !== 'string') {
+            console.error('Error: Profile must be a valid file path string');
+            console.error(`Received: ${typeof argv.profile === 'object' ? '[object Object]' : argv.profile}`);
+            process.exit(1);
+        }
+        
         console.log('Starting agent with profile:', argv.profile);
         const agent = new Agent();
         await agent.start(argv.profile, argv.load_memory, argv.init_message, argv.count_id, argv.task_path, argv.task_id);

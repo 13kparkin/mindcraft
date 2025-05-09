@@ -30,6 +30,48 @@ Do not connect this bot to public servers with coding enabled. This project allo
 
 If you encounter issues, check the [FAQ](https://github.com/kolbytn/mindcraft/blob/main/FAQ.md) or find support on [discord](https://discord.gg/mp73p35dzC). We are currently not very responsive to github issues.
 
+## Ollama Setup
+
+If you're using Ollama as your LLM provider, follow these steps to ensure it's properly configured:
+
+1. **Install Ollama**: Download and install from [ollama.com/download](https://ollama.com/download)
+
+2. **Pull Required Models**: 
+   ```bash
+   # Pull the default chat model
+   ollama pull meta-llama/llama3
+   
+   # Pull the default embedding model
+   ollama pull nomic-embed-text
+   ```
+
+3. **Verify Ollama is Running**: Confirm Ollama is listening on the default port (11434):
+   ```bash
+   curl localhost:11434/v1/models
+   ```
+   You should see a JSON response listing available models.
+
+4. **Configuration**: 
+   - By default, the system connects to Ollama at `http://{settings.host}:11434`
+   - If your Ollama instance is running on a different host or port, you can set these environment variables:
+     ```bash
+     export OLLAMA_HOST=your-ollama-host
+     export OLLAMA_PORT=your-ollama-port
+     ```
+
+5. **Troubleshooting Connection Errors**:
+   - If you see "Failed to send Ollama request" or "No response data" errors:
+     - Verify Ollama is running: `ps aux | grep ollama`
+     - Check if the port is accessible: `curl localhost:11434/v1/models`
+     - Ensure your firewall allows connections to port 11434
+     - Check the Ollama logs for errors: `ollama serve` (in a separate terminal)
+   - Run the health-check script to diagnose issues:
+     ```bash
+     node scripts/check-ollama-health.js
+     ```
+
+For more details on Ollama configuration, see the [Ollama documentation](https://github.com/ollama/ollama/blob/main/docs/api.md).
+
 ## Tasks
 
 Bot performance can be roughly evaluated with Tasks. Tasks automatically intialize bots with a goal to aquire specific items or construct predefined buildings, and remove the bot once the goal is achieved.
@@ -53,7 +95,7 @@ You can configure the agent's name, model, and prompts in their profile like `an
 | `anthropic` | `ANTHROPIC_API_KEY` | `claude-3-haiku-20240307` | [docs](https://docs.anthropic.com/claude/docs/models-overview) |
 | `xai` | `XAI_API_KEY` | `grok-2-1212` | [docs](https://docs.x.ai/docs) |
 | `deepseek` | `DEEPSEEK_API_KEY` | `deepseek-chat` | [docs](https://api-docs.deepseek.com/) |
-| `ollama` (local) | n/a | `ollama/llama3.1` | [docs](https://ollama.com/library) |
+| `ollama` (local) | n/a | `ollama/llama3.1` or `meta-llama/llama3` | [docs](https://ollama.com/library) |
 | `qwen` | `QWEN_API_KEY` | `qwen-max` | [Intl.](https://www.alibabacloud.com/help/en/model-studio/developer-reference/use-qwen-by-calling-api)/[cn](https://help.aliyun.com/zh/model-studio/getting-started/models) |
 | `mistral` | `MISTRAL_API_KEY` | `mistral-large-latest` | [docs](https://docs.mistral.ai/getting-started/models/models_overview/) |
 | `replicate` | `REPLICATE_API_KEY` | `replicate/meta/meta-llama-3-70b-instruct` | [docs](https://replicate.com/collections/language-models) |
@@ -102,9 +144,72 @@ When running in docker, if you want the bot to join your local minecraft server,
 
 To connect to an unsupported minecraft version, you can try to use [viaproxy](services/viaproxy/README.md)
 
+# Role-Based Bot System
+
+Mindcraft now uses a template-based role system to make it easier to create and manage bot profiles.
+
+## Adding New Roles
+
+To add a new role:
+
+1. Create a JSON template file in the `roles/templates/` directory (e.g., `explorer.json`)
+2. Include required fields in your template (see below)
+3. Use `$NAME` as a placeholder that will be replaced with the actual role name
+4. The system will automatically generate concrete profiles in `profiles/generated/`
+
+### Template Structure
+
+Role templates should include these key elements:
+
+```json
+{
+  "name": "$NAME",
+  "model": "gpt-4o",
+  "personality": "An explorer who loves to discover new biomes and resources",
+  "goals": [
+    "Explore the world and discover new biomes",
+    "Collect rare resources"
+  ],
+  "prompts": {
+    "system": "You are $NAME, an explorer in Minecraft...",
+    "examples": [
+      "Example conversation 1...",
+      "Example conversation 2..."
+    ]
+  }
+}
+```
+
+### Customizing Templates
+
+You can customize templates in several ways:
+
+- Use environment variables to override settings
+- Modify `settings.js` to change default values
+- Use the `$NAME` placeholder which gets replaced with the role name
+
+## Using Roles via CLI
+
+You can specify which roles to load via command line:
+
+```bash
+# Load specific roles
+npm start -- --roles explorer,builder,scout
+
+# Or use the node command directly
+node main.js --roles explorer,builder,scout
+```
+
+## Generated Profiles
+
+- All generated profiles are stored in `profiles/generated/`
+- These files are automatically created from templates
+- You can safely delete the generated folder to reset all profiles
+- Do not edit files in the generated folder as they will be overwritten
+
 # Bot Profiles
 
-Bot profiles are json files (such as `andy.json`) that define:
+Bot profiles are json files that define:
 
 1. Bot backend LLMs to use for talking, coding, and embedding.
 2. Prompts used to influence the bot's behavior.
@@ -157,7 +262,11 @@ If you try to use an unsupported model, then it will default to a simple word-ov
 
 ## Specifying Profiles via Command Line
 
-By default, the program will use the profiles specified in `settings.js`. You can specify one or more agent profiles using the `--profiles` argument: `node main.js --profiles ./profiles/andy.json ./profiles/jill.json`
+You can specify which profiles to load in several ways:
+
+1. Configure the `roles` array in `settings.js` (recommended)
+2. Use the `--roles` argument: `node main.js --roles explorer,builder,scout`
+3. Use the `--profiles` argument to specify exact paths: `node main.js --profiles ./profiles/andy.json ./profiles/jill.json`
 
 ## Patches
 

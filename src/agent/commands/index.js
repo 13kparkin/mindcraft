@@ -26,8 +26,8 @@ export function blacklistCommands(commands) {
     }
 }
 
-const commandRegex = /!(\w+)(?:\(((?:-?\d+(?:\.\d+)?|true|false|"[^"]*")(?:\s*,\s*(?:-?\d+(?:\.\d+)?|true|false|"[^"]*"))*)\))?/
-const argRegex = /-?\d+(?:\.\d+)?|true|false|"[^"]*"/g;
+const commandRegex = /!(\w+)(?:\(((?:-?\d+(?:\.\d+)?|true|false|(?:\"[^\"]*\"|\'[^\']*\'))(?:\s*,\s*(?:-?\d+(?:\.\d+)?|true|false|(?:\"[^\"]*\"|\'[^\']*\')))*)\))?/
+const argRegex = /-?\d+(?:\.\d+)?|true|false|(?:\"[^\"]*\"|\'[^\']*\')/g;
 
 export function containsCommand(message) {
     const commandMatch = message.match(commandRegex);
@@ -247,7 +247,16 @@ export function getCommandDocs(agent) {
         if (command.params) {
             docs += 'Params:\n';
             for (let param in command.params) {
-                docs += `${param}: (${typeTranslations[command.params[param].type]??command.params[param].type}) ${command.params[param].description}\n`;
+                let paramData = command.params[param];
+                let typeString = typeTranslations[paramData.type] ?? paramData.type;
+                let description = paramData.description;
+                if (paramData.domain && (paramData.type === 'float' || paramData.type === 'int')) {
+                    let lower = paramData.domain[0];
+                    let upper = paramData.domain[1];
+                    let endpointType = paramData.domain[2] || '[)'; // Default to '[)' consistent with validation
+                    description += ` (must be in range ${endpointType[0]}${lower}, ${upper}${endpointType[1]})`;
+                }
+                docs += `${param}: (${typeString}) ${description}\n`;
             }
         }
     }

@@ -25,9 +25,12 @@ export class Agent {
             throw new Error('No profile filepath provided');
         }
         
+        if (typeof profile_fp !== 'string') {
+            throw new TypeError('Agent.start expects profile file path string, got '+typeof profile_fp);
+        }
+        
         console.log('Starting agent initialization with profile:', profile_fp);
 
-        
         
         // Initialize components with more detailed error handling
         console.log('Initializing action manager...');

@@ -32,7 +32,7 @@
     },
     "scripts": {
         "postinstall": "patch-package",
-        "start": "node main.js"
+        "start": "node main.js --task_path ./tasks/civilization_task.json --task_id civilization_building"
     },
     "devDependencies": {
         "@eslint/js": "^9.13.0",

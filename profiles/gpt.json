@@ -2,7 +2,8 @@
     "name": "gpt",
 
     "model": {
-        "model": "gpt-4o",
+        "api": "openrouter",
+        "model": "meta-llama/llama-4-maverick:free",
         "params": {
             "temperature": 0.5
         }

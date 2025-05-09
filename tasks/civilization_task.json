@@ -1,0 +1,44 @@
+{
+  "civilization_building": {
+    "description": "A collaborative mission where multiple agents work together to establish a thriving civilization",
+    "agent_count": 10,
+    "goal": "Collaborate to establish a thriving civilization: explore the surroundings, gather essential resources, build shelter and infrastructure, establish sustainable food sources, create defensive structures, and develop specialized roles within your community. Work together to survive and prosper.",
+    "initial_inventory": {
+      "wooden_axe": 2,
+      "wooden_pickaxe": 2,
+      "wooden_shovel": 2,
+      "bread": 20,
+      "torch": 10
+    },
+    "meeting_coordinates": {
+      "x": 0,
+      "y": 64,
+      "z": 0
+    },
+    "task_parameters": {
+      "communication_required": true,
+      "resource_sharing": true,
+      "specialization_encouraged": true,
+      "build_central_base": true
+    },
+    "milestones": [
+      "Establish a central meeting point",
+      "Build basic shelter for all agents",
+      "Create sustainable food source",
+      "Establish defensive perimeter",
+      "Develop specialized buildings for different roles"
+    ],
+    "roles": [
+      "Explorer",
+      "Builder",
+      "Farmer",
+      "Hunter",
+      "Leader",
+      "Engineer",
+      "Merchant",
+      "Scholar",
+      "Healer",
+      "Scout"
+    ]
+  }
+}

@@ -356,12 +356,21 @@ export class Task {
             const tasksFile = readFileSync(task_path, 'utf8');
             const tasks = JSON.parse(tasksFile);
             let task = tasks[task_id];
+            
+            // Fallback: If task not found by key but the parsed object itself has a matching name
+            if (!task && tasks.name === task_id) {
+                task = tasks;
+            }
+            
+            // Check if task exists after fallback attempt
+            if (!task) {
+                throw new Error(`Task ${task_id} not found in ${task_path}`);
+            }
+            
             task['task_id'] = task_id;
             console.log(task);
             console.log(this.agent.count_id);
-            if (!task) {
-                throw new Error(`Task ${task_id} not found`);
-            }
+            
             // if ((!task.agent_count || task.agent_count <= 1) && this.agent.count_id > 0) {
             //     task = null;
             // }
@@ -392,17 +401,6 @@ export class Task {
             return {"message": 'No other agents found', "score": 0};
         }
         
-        if (this.taskTimeout) {
-            if (elapsedTime >= this.taskTimeout) {
-                console.log('Task timeout reached. Task unsuccessful.');
-                if (res) {
-                    return {"message": 'Task timeout reached', "score": res.score};
-                } else {
-                    return {"message": 'Task timeout reached', "score": 0};
-                }
-                
-            }
-        }
         return false;
     }
 

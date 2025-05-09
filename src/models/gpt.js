@@ -14,9 +14,21 @@ export class GPT {
         if (hasKey('OPENAI_ORG_ID'))
             config.organization = getKey('OPENAI_ORG_ID');
 
-        config.apiKey = getKey('OPENAI_API_KEY');
-
-        this.openai = new OpenAIApi(config);
+        try {
+            config.apiKey = getKey('OPENAI_API_KEY');
+            this.openai = new OpenAIApi(config);
+        } catch (error) {
+            // Check if OpenRouter API key is available as fallback
+            if (hasKey('OPENROUTER_API_KEY')) {
+                console.log('OpenAI API key not found. Falling back to OpenRouter.');
+                config.apiKey = getKey('OPENROUTER_API_KEY');
+                config.baseURL = 'https://openrouter.ai/api/v1';
+                this.openai = new OpenAIApi(config);
+            } else {
+                // No fallback available, rethrow the error
+                throw error;
+            }
+        }
     }
 
     async sendRequest(turns, systemMessage, stop_seq='***') {

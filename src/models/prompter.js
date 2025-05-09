@@ -32,6 +32,7 @@ const __dirname = path.dirname(__filename);
 export class Prompter {
     constructor(agent, fp) {
         this.agent = agent;
+        if (typeof fp !== 'string') throw new TypeError('Prompter expects file path, got '+typeof fp);
         this.profile = JSON.parse(readFileSync(fp, 'utf8'));
         let default_profile = JSON.parse(readFileSync('./profiles/defaults/_default.json', 'utf8'));
         let base_fp = settings.base_profile;
@@ -138,8 +139,14 @@ export class Prompter {
         if (!profile.api) {
             if (profile.model.includes('openrouter/'))
                 profile.api = 'openrouter'; // must do first because shares names with other models
+            else if (profile.model.includes('meta-llama-3.1-8b-instruct'))
+                profile.api = 'ollama';
             else if (profile.model.includes('ollama/'))
                 profile.api = 'ollama'; // also must do early because shares names with other models
+            else if (profile.model.includes('deepseek-r1-distill-llama-70b'))
+                profile.api = 'deepseekLocal';
+            else if (profile.model.includes('gemma-3-12b-it'))
+                profile.api = 'gemmalocal';
             else if (profile.model.includes('gemini'))
                 profile.api = 'google';
             else if (profile.model.includes('vllm/'))
@@ -153,7 +160,7 @@ export class Prompter {
             else if (profile.model.includes('replicate/'))
                 profile.api = 'replicate';
             else if (profile.model.includes('mistralai/') || profile.model.includes("mistral/"))
-                model_profile.api = 'mistral';
+                profile.api = 'mistral';
             else if (profile.model.includes("groq/") || profile.model.includes("groqcloud/"))
                 profile.api = 'groq';
             else if (profile.model.includes("glhf/"))
@@ -162,8 +169,10 @@ export class Prompter {
                 profile.api = 'hyperbolic';
             else if (profile.model.includes('novita/'))
                 profile.api = 'novita';
-            else if (profile.model.includes('qwen'))
-                profile.api = 'qwen';
+            // else if (profile.model.includes('qwen'))
+            //     profile.api = 'qwen';
+            else if (profile.model.includes('deepseek-r1-distill-qwen-7b'))
+                profile.api = 'deepseekLocal';
             else if (profile.model.includes('grok'))
                 profile.api = 'xai';
             else if (profile.model.includes('deepseek'))
@@ -209,6 +218,10 @@ export class Prompter {
             model = new OpenRouter(profile.model.replace('openrouter/', ''), profile.url, profile.params);
         else if (profile.api === 'vllm')
             model = new VLLM(profile.model.replace('vllm/', ''), profile.url, profile.params);
+        else if (profile.api === 'deepseekLocal')
+            model = new Local(profile.model, profile.url, profile.params);
+        else if (profile.api === 'gemmalocal')
+            model = new Local(profile.model, profile.url, profile.params);
         else
             throw new Error('Unknown API:', profile.api);
         return model;
@@ -327,9 +340,11 @@ export class Prompter {
 
         for (let i = 0; i < 3; i++) { // try 3 times to avoid hallucinations
             await this.checkCooldown();
+            /*
             if (current_msg_time !== this.most_recent_msg_time) {
                 return '';
             }
+            */
 
             let prompt = this.profile.conversing;
             prompt = await this.replaceStrings(prompt, messages, this.convo_examples);
@@ -355,10 +370,12 @@ export class Prompter {
                 continue;
             }
 
+            /*
             if (current_msg_time !== this.most_recent_msg_time) {
                 console.warn(`${this.agent.name} received new message while generating, discarding old response.`);
                 return '';
             } 
+            */
 
             if (generation?.includes('</think>')) {
                 const [_, afterThink] = generation.split('</think>')
