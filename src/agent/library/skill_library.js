@@ -51,19 +51,39 @@ export class SkillLibrary {
         }
         else if (!this.embedding_model) {
             skill_doc_similarities = Object.keys(this.skill_docs_embeddings)
-                .map(doc_key => ({
-                    doc_key,
-                    similarity_score: wordOverlapScore(message, this.skill_docs_embeddings[doc_key])
-                }))
+                .map(doc_key => {
+                    try {
+                        return {
+                            doc_key,
+                            similarity_score: wordOverlapScore(message, doc_key)
+                        };
+                    } catch (error) {
+                        console.warn(`Error computing similarity for doc: ${doc_key.substring(0, 30)}...`, error);
+                        return {
+                            doc_key,
+                            similarity_score: 0
+                        };
+                    }
+                })
                 .sort((a, b) => b.similarity_score - a.similarity_score);
         }
         else {
             let latest_message_embedding = await this.embedding_model.embed(message);
             skill_doc_similarities = Object.keys(this.skill_docs_embeddings)
-            .map(doc_key => ({
-                doc_key,
-                similarity_score: cosineSimilarity(latest_message_embedding, this.skill_docs_embeddings[doc_key])
-            }))
+            .map(doc_key => {
+                try {
+                    return {
+                        doc_key,
+                        similarity_score: cosineSimilarity(latest_message_embedding, this.skill_docs_embeddings[doc_key])
+                    };
+                } catch (error) {
+                    console.warn('Error computing embedding similarity for doc:', doc_key, error);
+                    return {
+                        doc_key,
+                        similarity_score: 0
+                    };
+                }
+            })
             .sort((a, b) => b.similarity_score - a.similarity_score);
         }
 

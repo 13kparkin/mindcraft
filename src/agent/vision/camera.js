@@ -20,12 +20,24 @@ export class Camera extends EventEmitter {
         this.viewDistance = 12;
         this.width = 800;
         this.height = 512;
-        this.canvas = createCanvas(this.width, this.height);
-        this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas });
-        this.viewer = new Viewer(this.renderer);
-        this._init().then(() => {
-            this.emit('ready');
-        })
+        this.failedInit = false;
+        
+        try {
+            this.canvas = createCanvas(this.width, this.height);
+            this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas });
+            this.viewer = new Viewer(this.renderer);
+            this._init().then(() => {
+                this.emit('ready');
+            }).catch(err => {
+                console.error('Camera initialization failed:', err);
+                this.failedInit = true;
+                this.emit('error', err);
+            });
+        } catch (err) {
+            console.error('WebGL initialization failed:', err);
+            this.failedInit = true;
+            this.emit('error', err);
+        }
     }
   
     async _init () {
@@ -41,6 +53,10 @@ export class Camera extends EventEmitter {
     }
   
     async capture() {
+        if (this.failedInit) {
+            throw new Error('Cannot capture: Camera initialization failed');
+        }
+        
         const center = new Vec3(this.bot.entity.position.x, this.bot.entity.position.y+this.bot.entity.height, this.bot.entity.position.z);
         this.viewer.camera.position.set(center.x, center.y, center.z);
         await this.worldView.updatePosition(center);

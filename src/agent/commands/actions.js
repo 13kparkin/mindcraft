@@ -1,6 +1,7 @@
 import * as skills from '../library/skills.js';
 import settings from '../../../settings.js';
 import convoManager from '../conversation.js';
+import { Vec3 } from 'vec3';
 
 
 function runAsAction (actionFn, resume = false, timeout = -1) {
@@ -463,5 +464,79 @@ export const actionsList = [
         perform: runAsAction(async (agent, distance) => {
             await skills.digDown(agent.bot, distance)
         })
+    },
+    {
+        name: '!scanEnvironment',
+        description: 'Scans the environment around the bot for non-air blocks within a given radius and returns their names and coordinates, sorted by proximity. This is a programmatic scan, not based on visual rendering.',
+        params: {
+            'radius': { type: 'int', description: 'The radius (in blocks) to scan around the bot. Recommended 5-15. Max 30.', domain: [1, 30] }
+        },
+        perform: runAsAction(async (agent, radius_str = "10") => {
+            console.log('scanEnvironment command received with radius_str:', radius_str);
+            
+            const radius = parseInt(radius_str, 10);
+            if (isNaN(radius) || radius <= 0 || radius > 30) { // Max radius 30 for performance
+                return "Invalid radius. Please provide a whole number between 1 and 30.";
+            }
+
+            const bot = agent.bot;
+            const blocksInfo = [];
+
+            // Use bot.findBlocks to get positions of non-air blocks
+            // Increased count to ensure we get a good sample within the radius before sorting and truncating.
+            const nonAirBlockPositions = bot.findBlocks({
+                matching: (block) => block && block.name !== 'air' && block.name !== 'cave_air' && block.name !== 'void_air',
+                point: bot.entity.position,
+                maxDistance: radius,
+                count: 750 // Find up to 750 blocks initially to cover a decent volume for a 30-block radius.
+            });
+
+            console.log(`scanEnvironment found ${nonAirBlockPositions ? nonAirBlockPositions.length : 0} non-air blocks`);
+            
+            if (!nonAirBlockPositions || nonAirBlockPositions.length === 0) {
+                return `No significant blocks found within a ${radius}-block radius.`;
+            }
+
+            for (const pos of nonAirBlockPositions) {
+                const block = bot.blockAt(pos);
+                if (block) {
+                    blocksInfo.push({
+                        name: block.name,
+                        position: { x: block.position.x, y: block.position.y, z: block.position.z },
+                        // Calculate distance for sorting
+                        distance: bot.entity.position.distanceTo(block.position)
+                    });
+                }
+            }
+
+            // Sort blocks by distance
+            blocksInfo.sort((a, b) => a.distance - b.distance);
+
+            const MAX_BLOCKS_TO_REPORT = 30; // Limit what we report back
+            let outputString = `Found ${blocksInfo.length} non-air blocks (reporting up to ${MAX_BLOCKS_TO_REPORT} closest within ${radius}m radius):
+`;
+            
+            const reportCount = Math.min(blocksInfo.length, MAX_BLOCKS_TO_REPORT);
+
+            if (reportCount === 0 && blocksInfo.length > 0) { // Should only happen if all found blocks were beyond MAX_BLOCKS_TO_REPORT after some filtering, which isn't the case here.
+                 return `Found ${blocksInfo.length} blocks, but none to report after filtering. This might be an anomaly.`;
+            } else if (reportCount === 0) {
+                 return `No significant blocks found to report within a ${radius}-block radius.`;
+            }
+
+
+            for (let i = 0; i < reportCount; i++) {
+                const b = blocksInfo[i];
+                outputString += `- ${b.name} at (x:${b.position.x.toFixed(1)}, y:${b.position.y.toFixed(1)}, z:${b.position.z.toFixed(1)}), ~${b.distance.toFixed(1)}m away
+`;
+            }
+
+            if (blocksInfo.length > MAX_BLOCKS_TO_REPORT) {
+                outputString += `... and ${blocksInfo.length - MAX_BLOCKS_TO_REPORT} more blocks not listed.`;
+            }
+            
+            console.log('scanEnvironment final output:', outputString);
+            return outputString;
+        }, false, 1) // resume=false, 1 minute timeout (generous for a scan)
     },
 ];

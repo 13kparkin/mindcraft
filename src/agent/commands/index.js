@@ -21,8 +21,18 @@ export function blacklistCommands(commands) {
             console.warn(`Command ${command_name} is unblockable`);
             continue;
         }
+        // Remove from commandMap
+        if (!commandMap[command_name]) {
+          console.warn('Cannot blacklist unknown command', command_name);
+          continue;
+        }
         delete commandMap[command_name];
-        delete commandList.find(command => command.name === command_name);
+        
+        // Find the index in commandList and remove it with splice
+        const index = commandList.findIndex(command => command.name === command_name);
+        if (index !== -1) {
+            commandList.splice(index, 1);
+        }
     }
 }
 

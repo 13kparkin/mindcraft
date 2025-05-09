@@ -5,6 +5,7 @@ import { Prompter } from '../models/prompter.js';
 import { initModes } from './modes.js';
 import { initBot } from '../utils/mcdata.js';
 import { containsCommand, commandExists, executeCommand, truncCommandMessage, isAction, blacklistCommands } from './commands/index.js';
+import { scanEnvironment } from './environment_scanner.js';
 import { ActionManager } from './action_manager.js';
 import { NPCContoller } from './npc/controller.js';
 import { MemoryBank } from './memory_bank.js';
@@ -114,12 +115,21 @@ export class Agent {
                 await new Promise((resolve) => setTimeout(resolve, 10000));
                 this.checkAllPlayersPresent();
               
-                console.log('Initializing vision intepreter...');
-                this.vision_interpreter = new VisionInterpreter(this, settings.allow_vision);
+                // Initialize vision in its own try/catch block
+                try {
+                    console.log('Initializing vision interpreter...');
+                    this.vision_interpreter = new VisionInterpreter(this, settings.allow_vision);
+                } catch (visionError) {
+                    console.error('Vision initialization failed:', visionError);
+                    // Fall back to a non-vision interpreter
+                    this.vision_interpreter = new VisionInterpreter(this, false);
+                    console.log('Continuing with vision disabled');
+                }
 
             } catch (error) {
                 console.error('Error in spawn event:', error);
-                process.exit(0);
+                // Don't exit process, allow other agents to continue running
+                console.warn(`Agent ${this.name} failed to initialize properly but will continue running`);
             }
         });
     }
@@ -231,6 +241,14 @@ export class Agent {
         if (!source || !message) {
             console.warn('Received empty message from', source);
             return false;
+        }
+        
+        let scanOutput = null;
+        if (settings.autoScanEnvironment) {
+            scanOutput = await scanEnvironment(this);
+            if (scanOutput) this.history.add('system', `Environment scan results:\n${scanOutput}`);
+        } else {
+            console.log(`${this.name}: Skipping automatic environment scan (disabled in settings)`);
         }
 
         let used_command = false;

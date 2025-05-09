@@ -1,3 +1,7 @@
+// Register global error handlers to prevent agent crashes
+process.on('unhandledRejection', err => console.error('Unhandled Rejection:', err));
+process.on('uncaughtException', err => console.error('Uncaught Exception:', err));
+
 import { AgentProcess } from './src/process/agent_process.js';
 import settings from './settings.js';
 import yargs from 'yargs';
@@ -105,9 +109,7 @@ async function main() {
     }
 }
 
-try {
-    main();
-} catch (error) {
-    console.error('An error occurred:', error);
+main().catch(error => {
+    console.error('Fatal error:', error);
     process.exit(1);
-}
+});

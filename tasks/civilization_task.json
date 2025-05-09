@@ -1,7 +1,7 @@
 {
   "civilization_building": {
     "description": "A collaborative mission where multiple agents work together to establish a thriving civilization",
-    "agent_count": 10,
+    "agent_count": 7,
     "goal": "Collaborate to establish a thriving civilization: explore the surroundings, gather essential resources, build shelter and infrastructure, establish sustainable food sources, create defensive structures, and develop specialized roles within your community. Work together to survive and prosper.",
     "initial_inventory": {
       "wooden_axe": 2,
@@ -35,10 +35,7 @@
       "Hunter",
       "Leader",
       "Engineer",
-      "Merchant",
-      "Scholar",
-      "Healer",
-      "Scout"
+      "Healer"
     ]
   }
 }

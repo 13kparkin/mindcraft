@@ -1,3 +1,7 @@
+import { executeCommand } from './commands/index.js';
+import { scanEnvironment } from './environment_scanner.js';
+import settings from '../../settings.js';
+
 const STOPPED = 0
 const ACTIVE = 1
 const PAUSED = 2
@@ -63,6 +67,14 @@ export class SelfPrompter {
         let no_command_count = 0;
         const MAX_NO_COMMAND = 3;
         while (!this.interrupt) {
+            let scanOutput;
+            if (settings.autoScanEnvironment) {
+                scanOutput = await scanEnvironment(this.agent);
+                if (scanOutput) this.agent.history.add('system', `Environment scan results:\n${scanOutput}`);
+            } else {
+                console.log('Auto scan disabled in SelfPrompter');
+            }
+            
             const msg = `You are self-prompting with the goal: '${this.prompt}'. Your next response MUST contain a command with this syntax: !commandName. Respond:`;
             
             let used_command = await this.agent.handleMessage('system', msg, -1);

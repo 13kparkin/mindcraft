@@ -8,7 +8,17 @@ export class VisionInterpreter {
         this.allow_vision = allow_vision;
         this.fp = './bots/'+agent.name+'/screenshots/';
         if (allow_vision) {
-            this.camera = new Camera(agent.bot, this.fp);
+            try {
+                this.camera = new Camera(agent.bot, this.fp);
+                // Listen for camera initialization errors
+                this.camera.on('error', (err) => {
+                    console.warn(`Vision disabled for ${agent.name}: Camera initialization failed:`, err);
+                    this.allow_vision = false;
+                });
+            } catch (err) {
+                console.warn(`Vision disabled for ${agent.name}: Failed to create camera:`, err);
+                this.allow_vision = false;
+            }
         }
     }
 

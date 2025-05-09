@@ -84,7 +84,7 @@ export class Prompter {
 
         let embedding = this.profile.embedding;
         if (embedding === undefined) {
-            if (chat_model_profile.api !== 'ollama')
+            if (chat_model_profile.api !== 'local')
                 embedding = {api: chat_model_profile.api};
             else
                 embedding = {api: 'none'};
@@ -101,7 +101,7 @@ export class Prompter {
                 this.embedding_model = new GPT(embedding.model, embedding.url);
             else if (embedding.api === 'replicate')
                 this.embedding_model = new ReplicateAPI(embedding.model, embedding.url);
-            else if (embedding.api === 'ollama')
+            else if (embedding.api === 'local')
                 this.embedding_model = new Local(embedding.model, embedding.url);
             else if (embedding.api === 'qwen')
                 this.embedding_model = new Qwen(embedding.model, embedding.url);
@@ -147,6 +147,8 @@ export class Prompter {
                 profile.api = 'deepseekLocal';
             else if (profile.model.includes('gemma-3-12b-it'))
                 profile.api = 'gemmalocal';
+            else if (profile.model.includes('andy-3.6'))
+                profile.api = 'local';
             else if (profile.model.includes('gemini'))
                 profile.api = 'google';
             else if (profile.model.includes('vllm/'))
@@ -221,6 +223,8 @@ export class Prompter {
         else if (profile.api === 'deepseekLocal')
             model = new Local(profile.model, profile.url, profile.params);
         else if (profile.api === 'gemmalocal')
+            model = new Local(profile.model, profile.url, profile.params);
+        else if (profile.api === 'local')
             model = new Local(profile.model, profile.url, profile.params);
         else
             throw new Error('Unknown API:', profile.api);
